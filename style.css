@@ -44,3 +44,14 @@ header {
   padding: 10px;
   background: white;
 }
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.full {
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px;
+}
