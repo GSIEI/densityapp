@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Density App</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Handsontable -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.0.0/dist/handsontable.full.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/handsontable@14.0.0/dist/handsontable.full.min.js"></script>
+</head>
+
+<body>
+
+<header>
+  <h2 contenteditable="true" id="projectName">Project Name</h2>
+  <button onclick="addPage()">+ New Page</button>
+</header>
+
+<div id="tabs"></div>
+
+<div class="container">
+
+  <!-- Header Fields -->
+  <div class="form">
+    <input placeholder="Tested By" id="testedBy"/>
+    <input placeholder="Temperature" id="temperature"/>
+    <input placeholder="Soil Description" id="soil"/>
+    <input placeholder="Remarks" id="remarks"/>
+  </div>
+
+  <!-- Spreadsheet -->
+  <div id="sheet"></div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <p>Average: <span id="avg">0</span></p>
+    <input id="determined" placeholder="Determined Value"/>
+    <p>Percent: <span id="percent">0</span>%</p>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
