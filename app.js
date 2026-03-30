@@ -1,52 +1,123 @@
 let db = JSON.parse(localStorage.getItem("densityApp")) || {
-  projectName: "Project",
-  pages: []
+  projects: []
 };
 
+let currentProject = null;
 let currentPage = 0;
 let hot;
 
-// Create first page if none
-if (db.pages.length === 0) {
-  addPage();
-} else {
-  renderTabs();
-  loadPage(0);
+// ---------- HOME SCREEN ----------
+function renderHome() {
+  document.body.innerHTML = `
+    <h2>Projects</h2>
+    <button onclick="createProject()">+ New Project</button>
+    <div id="projectList"></div>
+  `;
+
+  const list = document.getElementById("projectList");
+
+  db.projects.forEach((p, i) => {
+    const div = document.createElement("div");
+    div.innerText = p.name;
+    div.onclick = () => openProject(i);
+    list.appendChild(div);
+  });
 }
 
-function save() {
-  localStorage.setItem("densityApp", JSON.stringify(db));
+function createProject() {
+  const name = prompt("Project name?");
+  if (!name) return;
+
+  db.projects.push({
+    name,
+    pages: []
+  });
+
+  save();
+  renderHome();
 }
 
-// Add new page
+function openProject(index) {
+  currentProject = index;
+  renderApp();
+}
+
+// ---------- MAIN APP ----------
+function renderApp() {
+  document.body.innerHTML = `
+    <header>
+      <h2>${db.projects[currentProject].name}</h2>
+      <button onclick="addPage()">+ Page</button>
+      <button onclick="renderHome()">⬅ Back</button>
+    </header>
+
+    <div id="tabs"></div>
+
+    <div class="container">
+
+      <div class="form-grid">
+        <input placeholder="Project"/>
+        <input placeholder="Project #"/>
+
+        <input placeholder="Client"/>
+        <input placeholder="Contractor"/>
+
+        <input placeholder="Construction Type"/>
+        <input placeholder="Compaction Standard"/>
+
+        <input placeholder="Specified Compaction"/>
+        <input placeholder="Specified Moisture"/>
+
+        <input placeholder="Date Tested"/>
+        <input placeholder="Tested By"/>
+
+        <input placeholder="Troxler #"/>
+        <input placeholder="Temp"/>
+      </div>
+
+      <input class="full" placeholder="Soil Description"/>
+      <input class="full" placeholder="General Location"/>
+      <input class="full" placeholder="Remarks"/>
+
+      <div id="sheet"></div>
+
+    </div>
+  `;
+
+  if (db.projects[currentProject].pages.length === 0) {
+    addPage();
+  } else {
+    renderTabs();
+    loadPage(0);
+  }
+}
+
+// ---------- PAGES ----------
 function addPage() {
-  db.pages.push({
+  db.projects[currentProject].pages.push({
     date: new Date().toISOString().split("T")[0],
-    header: {},
     data: Array(10).fill({
-      test: "",
       probe: "",
       location: "",
       depth: "",
-      wd: "",
-      dd: "",
-      mc: "",
-      pd: ""
-    }),
-    determined: ""
+      wd1: "", wd2: "", wd3: "",
+      dd1: "", dd2: "", dd3: "",
+      mc1: "", mc2: "", mc3: "",
+      pd: "",
+      omc: ""
+    })
   });
 
   save();
   renderTabs();
-  loadPage(db.pages.length - 1);
+  loadPage(db.projects[currentProject].pages.length - 1);
 }
 
-// Tabs
 function renderTabs() {
   const tabs = document.getElementById("tabs");
   tabs.innerHTML = "";
 
-  db.pages.forEach((p, i) => {
+  db.projects[currentProject].pages.forEach((p, i) => {
     const t = document.createElement("div");
     t.className = "tab" + (i === currentPage ? " active" : "");
     t.innerText = p.date;
@@ -55,19 +126,13 @@ function renderTabs() {
   });
 }
 
-// Load page
 function loadPage(index) {
   currentPage = index;
   renderTabs();
-
-  const page = db.pages[index];
-
-  document.getElementById("determined").value = page.determined || "";
-
-  createTable(page.data);
+  createTable(db.projects[currentProject].pages[index].data);
 }
 
-// Spreadsheet
+// ---------- TABLE ----------
 function createTable(data) {
   const container = document.getElementById("sheet");
 
@@ -75,62 +140,72 @@ function createTable(data) {
 
   hot = new Handsontable(container, {
     data,
-    colHeaders: ["Test", "Probe", "Location", "Depth", "W.D", "D.D", "M.C", "P.D"],
+    colHeaders: [
+      "Probe mm", "Location", "Depth m",
+      "WD1","WD2","WD3",
+      "DD1","DD2","DD3",
+      "MC1","MC2","MC3",
+      "PD","OMC","% Density"
+    ],
     columns: [
-      { data: "test" },
       { data: "probe" },
       { data: "location" },
       { data: "depth" },
-      { data: "wd" },
-      { data: "dd" },
-      { data: "mc" },
-      { data: "pd" }
+
+      { data: "wd1" },{ data: "wd2" },{ data: "wd3" },
+      { data: "dd1" },{ data: "dd2" },{ data: "dd3" },
+      { data: "mc1" },{ data: "mc2" },{ data: "mc3" },
+
+      { data: "pd" },
+      { data: "omc" },
+
+      {
+        data: "density",
+        readOnly: true
+      }
     ],
     rowHeaders: true,
     licenseKey: "non-commercial-and-evaluation",
-    afterChange: () => updateCalculations()
+
+    afterChange: () => calculate()
   });
 
-  updateCalculations();
+  calculate();
 }
 
-// Calculations
-function updateCalculations() {
-  const data = hot.getData();
-  let total = 0;
-  let count = 0;
+// ---------- CALCULATIONS ----------
+function calculate() {
+  const data = hot.getSourceData();
 
   data.forEach(row => {
-    const val = parseFloat(row[5]); // D.D column
-    if (!isNaN(val)) {
-      total += val;
-      count++;
+    const ddVals = [row.dd1, row.dd2, row.dd3]
+      .map(v => parseFloat(v))
+      .filter(v => !isNaN(v));
+
+    const avgDD = ddVals.length
+      ? ddVals.reduce((a,b) => a+b,0)/ddVals.length
+      : 0;
+
+    const pd = parseFloat(row.pd);
+
+    let density = 0;
+    if (!isNaN(pd) && pd !== 0) {
+      density = (avgDD / pd) * 100;
     }
+
+    row.density = density.toFixed(2);
   });
 
-  const avg = count ? total / count : 0;
-  document.getElementById("avg").innerText = avg.toFixed(2);
+  hot.render();
 
-  const determined = parseFloat(document.getElementById("determined").value);
-  let percent = 0;
-
-  if (!isNaN(determined) && determined !== 0) {
-    percent = (avg / determined) * 100;
-  }
-
-  document.getElementById("percent").innerText = percent.toFixed(2);
-
-  // Save data
-  db.pages[currentPage].data = hot.getSourceData();
-  db.pages[currentPage].determined = determined;
-
+  db.projects[currentProject].pages[currentPage].data = data;
   save();
 }
 
-// Update percent when user types
-document.getElementById("determined").addEventListener("input", updateCalculations);
-
-// Register service worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+// ---------- SAVE ----------
+function save() {
+  localStorage.setItem("densityApp", JSON.stringify(db));
 }
+
+// INIT
+renderHome();
