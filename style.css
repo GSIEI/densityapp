@@ -55,3 +55,20 @@ header {
   margin-top: 5px;
   padding: 8px;
 }
+@media print {
+  body {
+    background: white;
+  }
+
+  header, #tabs, button {
+    display: none;
+  }
+
+  .container {
+    padding: 0;
+  }
+
+  input {
+    border: none;
+  }
+}
