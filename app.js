@@ -94,9 +94,10 @@ function renderApp() {
 
 // ---------- PAGES ----------
 function addPage() {
-  db.projects[currentProject].pages.push({
-    date: new Date().toISOString().split("T")[0],
-    data: Array(10).fill({
+  const newRows = [];
+
+  for (let i = 0; i < 10; i++) {
+    newRows.push({
       probe: "",
       location: "",
       depth: "",
@@ -104,8 +105,14 @@ function addPage() {
       dd1: "", dd2: "", dd3: "",
       mc1: "", mc2: "", mc3: "",
       pd: "",
-      omc: ""
-    })
+      omc: "",
+      density: ""
+    });
+  }
+
+  db.projects[currentProject].pages.push({
+    date: new Date().toISOString().split("T")[0],
+    data: newRows
   });
 
   save();
@@ -209,3 +216,31 @@ function save() {
 
 // INIT
 renderHome();
+
+//--------- Delete Page ------
+function deletePage() {
+  if (!confirm("Delete this page?")) return;
+
+  db.projects[currentProject].pages.splice(currentPage, 1);
+
+  if (db.projects[currentProject].pages.length === 0) {
+    addPage();
+  } else {
+    loadPage(0);
+  }
+
+  save();
+  renderTabs();
+}
+
+function deleteProject() {
+  if (!confirm("Delete this project?")) return;
+
+  db.projects.splice(currentProject, 1);
+  save();
+  renderHome();
+}
+//--------- Print/export --------
+function printPage() {
+  window.print();
+}
